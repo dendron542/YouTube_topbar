@@ -9,6 +9,9 @@ class YouTubeTopControls {
         this.isInitialized = false;
         this.observer = null;
         this.isCollapsed = false;
+        this.retryCount = 0;
+        this.maxRetries = 10;
+        this.retryInterval = 1000;
         
         this.init();
     }
@@ -26,6 +29,7 @@ class YouTubeTopControls {
         try {
             // YouTube動画ページかチェック
             if (!this.isYouTubeVideoPage()) {
+                console.log('YouTube Top Controls: Not a video page, skipping initialization');
                 return;
             }
             
@@ -35,13 +39,32 @@ class YouTubeTopControls {
                     this.createTopControlBar();
                     this.setupEventListeners();
                     this.startObserver();
+                    // 動画が完全に準備できるまでレイアウト変更を遅延
+                    this.waitForVideoReadyAndApplyLayout();
+                    this.retryCount = 0; // 成功時はリトライカウントをリセット
+                    console.log('YouTube Top Controls: Successfully initialized');
                 } else {
-                    // 要素が見つからない場合はリトライ
-                    setTimeout(() => this.initializeWhenReady(), 2000);
+                    this.handleRetry();
                 }
-            }, 1000);
+            }, Math.max(1000, this.retryCount * this.retryInterval));
         } catch (error) {
             console.error('YouTube Top Controls: Error during initialization:', error);
+            this.handleRetry();
+        }
+    }
+    
+    handleRetry() {
+        this.retryCount++;
+        
+        if (this.retryCount <= this.maxRetries) {
+            const nextRetryDelay = Math.min(this.retryInterval * this.retryCount, 10000); // 最大10秒
+            console.log(`YouTube Top Controls: Retry ${this.retryCount}/${this.maxRetries} in ${nextRetryDelay}ms`);
+            
+            setTimeout(() => {
+                this.initializeWhenReady();
+            }, nextRetryDelay);
+        } else {
+            console.warn(`YouTube Top Controls: Failed to initialize after ${this.maxRetries} attempts. Giving up.`);
         }
     }
     
@@ -52,15 +75,35 @@ class YouTubeTopControls {
     
     findVideoElements() {
         try {
-            // 動画要素を取得
-            this.video = document.querySelector('video');
+            // 複数のセレクタを試してより確実に動画要素を取得
+            const videoSelectors = [
+                'video',
+                '#movie_player video',
+                '.html5-video-player video',
+                'ytd-player video'
+            ];
+            
+            this.video = null;
+            for (const selector of videoSelectors) {
+                this.video = document.querySelector(selector);
+                if (this.video) {
+                    console.log(`YouTube Top Controls: Video found with selector: ${selector}`);
+                    break;
+                }
+            }
             
             if (!this.video) {
-                console.warn('YouTube Top Controls: Video element not found');
+                console.log('YouTube Top Controls: Video element not found, will retry...');
                 return false;
             }
             
-            // コントロール要素を取得
+            // 動画がまだ読み込み中の場合もリトライ
+            if (this.video.readyState < 1) {
+                console.log('YouTube Top Controls: Video not ready yet (readyState:', this.video.readyState, '), will retry...');
+                return false;
+            }
+            
+            // コントロール要素を取得（これらは後から見つかっても良い）
             this.originalControls = {
                 playButton: document.querySelector('.ytp-play-button'),
                 volumeButton: document.querySelector('.ytp-mute-button'),
@@ -71,8 +114,7 @@ class YouTubeTopControls {
                 fullscreenButton: document.querySelector('.ytp-fullscreen-button')
             };
             
-            console.log('YouTube Top Controls: Video element found:', !!this.video);
-            console.log('YouTube Top Controls: Original controls found:', this.originalControls);
+            console.log('YouTube Top Controls: Video element found and ready');
             return true;
         } catch (error) {
             console.error('YouTube Top Controls: Error finding video elements:', error);
@@ -179,6 +221,38 @@ class YouTubeTopControls {
         console.log('Top control bar created');
     }
     
+    waitForVideoReadyAndApplyLayout() {
+        // 初期状態ではレイアウトを適用しない
+        console.log('YouTube Top Controls: Waiting for video to be fully ready...');
+        
+        const checkVideoReady = () => {
+            if (this.video && this.video.readyState >= 2) { // HAVE_CURRENT_DATA 以上
+                console.log('YouTube Top Controls: Video is ready, applying layout changes');
+                this.applyLayoutChanges();
+            } else {
+                // まだ準備ができていない場合は少し待つ
+                setTimeout(checkVideoReady, 500);
+            }
+        };
+        
+        // 最初のチェック
+        checkVideoReady();
+    }
+    
+    applyLayoutChanges() {
+        try {
+            // YouTubeヘッダーとプレイヤーの位置調整を適用
+            document.documentElement.style.setProperty('--youtube-top-controls-active', 'true');
+            
+            // body に専用クラスを追加してCSSを有効化
+            document.body.classList.add('youtube-top-controls-active');
+            
+            console.log('YouTube Top Controls: Layout changes applied');
+        } catch (error) {
+            console.error('YouTube Top Controls: Error applying layout changes:', error);
+        }
+    }
+    
     setupEventListeners() {
         try {
             if (!this.video || !this.topControlBar) {
@@ -215,6 +289,8 @@ class YouTubeTopControls {
             let progressThrottle = null;
             progressBar?.addEventListener('input', (e) => {
                 if (progressThrottle) clearTimeout(progressThrottle);
+                // 即座に視覚的フィードバックを更新
+                e.target.style.setProperty('--progress-fill', e.target.value + '%');
                 progressThrottle = setTimeout(() => {
                     this.safeExecute(() => this.seekTo(e.target.value / 100));
                 }, 100);
@@ -255,6 +331,7 @@ class YouTubeTopControls {
             // 定期的な音量同期（YouTubeの元コントロールとの同期用）
             setInterval(() => {
                 this.safeExecute(() => this.updateVolumeDisplay());
+                this.safeExecute(() => this.updateProgress());
             }, 1000);
             
             // 初期値を設定
@@ -354,7 +431,10 @@ class YouTubeTopControls {
             
             if (progressBar) {
                 const percentage = (this.video.currentTime / this.video.duration) * 100;
-                progressBar.value = Math.max(0, Math.min(100, percentage));
+                const clampedPercentage = Math.max(0, Math.min(100, percentage));
+                progressBar.value = clampedPercentage;
+                // CSS変数を更新して視覚的な進行状況を表示（赤色部分）
+                progressBar.style.setProperty('--progress-fill', clampedPercentage + '%');
             }
             
             if (currentTimeSpan) {
@@ -484,6 +564,7 @@ class YouTubeTopControls {
         }
         // クリーンアップ
         document.body.classList.remove('controls-collapsed');
+        document.body.classList.remove('youtube-top-controls-active');
     }
 }
 
@@ -491,10 +572,19 @@ class YouTubeTopControls {
 let youtubeTopControls = null;
 
 function initExtension() {
-    if (youtubeTopControls) {
-        youtubeTopControls.destroy();
+    try {
+        if (youtubeTopControls) {
+            youtubeTopControls.destroy();
+        }
+        youtubeTopControls = new YouTubeTopControls();
+    } catch (error) {
+        console.error('YouTube Top Controls: Failed to initialize extension:', error);
+        // エラーが発生した場合も少し待ってからリトライ
+        setTimeout(() => {
+            console.log('YouTube Top Controls: Retrying initialization after error...');
+            initExtension();
+        }, 3000);
     }
-    youtubeTopControls = new YouTubeTopControls();
 }
 
 // ページ読み込み時とURL変更時に初期化
@@ -505,6 +595,11 @@ let currentUrl = window.location.href;
 const urlObserver = new MutationObserver(() => {
     if (window.location.href !== currentUrl) {
         currentUrl = window.location.href;
+        console.log('YouTube Top Controls: URL changed, reinitializing...');
+        // URL変更時はリトライカウントをリセット
+        if (youtubeTopControls) {
+            youtubeTopControls.retryCount = 0;
+        }
         setTimeout(initExtension, 500);
     }
 });
