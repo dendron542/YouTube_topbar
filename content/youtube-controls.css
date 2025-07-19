@@ -1,0 +1,534 @@
+/* YouTube Top Controls Extension CSS */
+
+.youtube-top-controls-bar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 60px !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+    backdrop-filter: blur(10px) !important;
+    z-index: 10000 !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 20px !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+    font-family: "YouTube Sans", "Roboto", sans-serif !important;
+    transition: all 0.3s ease !important;
+}
+
+.youtube-top-controls-bar * {
+    box-sizing: border-box !important;
+}
+
+.top-controls-container {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    max-width: 1280px !important;
+    margin: 0 auto !important;
+}
+
+.top-controls-left,
+.top-controls-right {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.top-controls-center {
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    margin: 0 20px !important;
+}
+
+/* 折り畳みボタンスタイル */
+.top-collapse-btn {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: none !important;
+    color: white !important;
+    cursor: pointer !important;
+    padding: 4px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+    width: 24px !important;
+    height: 24px !important;
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 10001 !important;
+}
+
+.top-collapse-btn.left-collapse {
+    left: 8px !important;
+}
+
+.top-collapse-btn.right-collapse {
+    right: 8px !important;
+}
+
+.top-collapse-btn:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    transform: translateY(-50%) scale(1.1) !important;
+}
+
+.top-collapse-btn svg {
+    width: 16px !important;
+    height: 16px !important;
+    fill: currentColor !important;
+}
+
+/* 折り畳み状態 */
+.top-controls-collapsed {
+    display: none !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+    backdrop-filter: blur(10px) !important;
+    border-radius: 0 0 12px 0 !important;
+    padding: 8px 16px !important;
+    z-index: 10000 !important;
+    width: auto !important;
+    max-width: 200px !important;
+}
+
+.top-expand-btn {
+    background: transparent !important;
+    border: none !important;
+    color: white !important;
+    cursor: pointer !important;
+    padding: 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+    border-radius: 4px !important;
+}
+
+.top-expand-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    transform: scale(1.1) !important;
+}
+
+.top-expand-btn svg {
+    width: 16px !important;
+    height: 16px !important;
+    fill: currentColor !important;
+}
+
+/* 折り畳み状態のメインバー */
+.youtube-top-controls-bar.collapsed {
+    height: auto !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+}
+
+.youtube-top-controls-bar.collapsed .top-controls-container {
+    display: none !important;
+}
+
+.youtube-top-controls-bar.collapsed .top-collapse-btn {
+    display: none !important;
+}
+
+.youtube-top-controls-bar.collapsed .top-controls-collapsed {
+    display: flex !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    backdrop-filter: blur(8px) !important;
+    border-radius: 0 0 12px 0 !important;
+    padding: 8px 16px !important;
+    margin: 0 !important;
+    width: auto !important;
+    max-width: 200px !important;
+}
+
+/* ボタンスタイル */
+.top-control-btn {
+    background: transparent !important;
+    border: none !important;
+    color: white !important;
+    cursor: pointer !important;
+    padding: 8px !important;
+    border-radius: 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    transition: all 0.2s ease !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+}
+
+.top-control-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    transform: scale(1.1) !important;
+}
+
+.top-control-btn:active {
+    transform: scale(0.95) !important;
+}
+
+.top-control-btn svg {
+    width: 24px !important;
+    height: 24px !important;
+    fill: currentColor !important;
+}
+
+/* 戻し/送りボタンの数字表示 */
+.rewind-text,
+.forward-text {
+    position: absolute !important;
+    bottom: 2px !important;
+    right: 2px !important;
+    font-size: 10px !important;
+    font-weight: bold !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    border-radius: 2px !important;
+    padding: 1px 2px !important;
+    line-height: 1 !important;
+}
+
+/* 音量コントロール */
+.top-volume-control {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.top-volume-slider {
+    width: 80px !important;
+    height: 4px !important;
+    background: linear-gradient(to right, #fff 0%, #fff var(--volume-fill, 100%), rgba(255, 255, 255, 0.3) var(--volume-fill, 100%), rgba(255, 255, 255, 0.3) 100%) !important;
+    border-radius: 2px !important;
+    outline: none !important;
+    cursor: pointer !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    --volume-fill: 100%;
+}
+
+.top-volume-slider::-webkit-slider-thumb {
+    width: 14px !important;
+    height: 14px !important;
+    background: white !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    transition: all 0.2s ease !important;
+}
+
+.top-volume-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2) !important;
+}
+
+.top-volume-slider::-moz-range-thumb {
+    width: 14px !important;
+    height: 14px !important;
+    background: white !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+    border: none !important;
+}
+
+/* 時間表示 */
+.top-time-display {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    color: white !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    min-width: 80px !important;
+}
+
+.time-separator {
+    opacity: 0.7 !important;
+}
+
+/* プログレスバー */
+.top-progress-container {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.top-progress-bar {
+    width: 100% !important;
+    height: 6px !important;
+    background: rgba(255, 255, 255, 0.3) !important;
+    border-radius: 3px !important;
+    outline: none !important;
+    cursor: pointer !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    transition: all 0.2s ease !important;
+}
+
+.top-progress-bar:hover {
+    height: 8px !important;
+}
+
+.top-progress-bar::-webkit-slider-thumb {
+    width: 16px !important;
+    height: 16px !important;
+    background: #ff0000 !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+    transition: all 0.2s ease !important;
+}
+
+.top-progress-bar:hover::-webkit-slider-thumb {
+    transform: scale(1.2) !important;
+}
+
+.top-progress-bar::-moz-range-thumb {
+    width: 16px !important;
+    height: 16px !important;
+    background: #ff0000 !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+    border: none !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+    .youtube-top-controls-bar {
+        height: 50px !important;
+        padding: 0 10px !important;
+    }
+    
+    .top-controls-container {
+        gap: 10px !important;
+    }
+    
+    .top-controls-center {
+        margin: 0 10px !important;
+    }
+    
+    .top-volume-control {
+        display: none !important;
+    }
+    
+    .top-time-display {
+        font-size: 11px !important;
+        min-width: 60px !important;
+    }
+    
+    .top-control-btn {
+        min-width: 36px !important;
+        min-height: 36px !important;
+        padding: 6px !important;
+    }
+    
+    .top-control-btn svg {
+        width: 20px !important;
+        height: 20px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .youtube-top-controls-bar {
+        height: 45px !important;
+        padding: 0 8px !important;
+    }
+    
+    .top-controls-left,
+    .top-controls-right {
+        gap: 4px !important;
+    }
+    
+    .top-controls-center {
+        margin: 0 8px !important;
+    }
+    
+    .top-time-display {
+        display: none !important;
+    }
+    
+    .top-control-btn {
+        min-width: 32px !important;
+        min-height: 32px !important;
+        padding: 4px !important;
+    }
+    
+    .top-control-btn svg {
+        width: 18px !important;
+        height: 18px !important;
+    }
+}
+
+/* フルスクリーン時の調整 */
+.youtube-top-controls-bar.fullscreen {
+    background: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* 非表示アニメーション */
+.youtube-top-controls-bar.hidden {
+    transform: translateY(-100%) !important;
+    opacity: 0 !important;
+}
+
+/* ホバー時の表示効果 */
+.youtube-top-controls-bar:hover {
+    background: rgba(0, 0, 0, 0.95) !important;
+}
+
+/* ツールチップスタイル */
+.top-control-btn[title]:hover::before {
+    content: attr(title) !important;
+    position: absolute !important;
+    bottom: -30px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    color: white !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+    z-index: 10001 !important;
+    pointer-events: none !important;
+}
+
+/* ページ上部のマージン調整（プレイヤー部分のみに適用） */
+/* コメント欄を除外し、プレイヤー周辺のみに限定 */
+#player-theater-container,
+#movie_player,
+.html5-video-player,
+ytd-player#ytd-player {
+    padding-top: 60px !important;
+    transition: padding-top 0.3s ease !important;
+}
+
+body.controls-collapsed #player-theater-container,
+body.controls-collapsed #movie_player,
+body.controls-collapsed .html5-video-player,
+body.controls-collapsed ytd-player#ytd-player {
+    padding-top: 40px !important;
+}
+
+@media (max-width: 768px) {
+    #player-theater-container,
+    #movie_player,
+    .html5-video-player,
+    ytd-player#ytd-player {
+        padding-top: 50px !important;
+    }
+    
+    body.controls-collapsed #player-theater-container,
+    body.controls-collapsed #movie_player,
+    body.controls-collapsed .html5-video-player,
+    body.controls-collapsed ytd-player#ytd-player {
+        padding-top: 35px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    #player-theater-container,
+    #movie_player,
+    .html5-video-player,
+    ytd-player#ytd-player {
+        padding-top: 45px !important;
+    }
+    
+    body.controls-collapsed #player-theater-container,
+    body.controls-collapsed #movie_player,
+    body.controls-collapsed .html5-video-player,
+    body.controls-collapsed ytd-player#ytd-player {
+        padding-top: 30px !important;
+    }
+}
+
+/* YouTube固有の要素との競合回避 */
+#masthead-container {
+    position: relative !important;
+    top: 60px !important;
+    transition: top 0.3s ease !important;
+}
+
+/* 折り畳み時のYouTubeヘッダー調整 */
+body.controls-collapsed #masthead-container {
+    top: 0px !important;
+}
+
+@media (max-width: 768px) {
+    #masthead-container {
+        top: 50px !important;
+    }
+    
+    body.controls-collapsed #masthead-container {
+        top: 0px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    #masthead-container {
+        top: 45px !important;
+    }
+    
+    body.controls-collapsed #masthead-container {
+        top: 0px !important;
+    }
+}
+
+/* コメント欄とその他コンテンツの影響を明示的に除外 */
+#comments,
+ytd-comments,
+#below-the-fold,
+ytd-item-section-renderer,
+#secondary,
+#secondary-inner,
+ytd-watch-next-secondary-results-renderer,
+ytd-comment-thread-renderer,
+ytd-commentbox,
+#content > #primary,
+#primary > #primary-inner,
+#columns {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+body.controls-collapsed #comments,
+body.controls-collapsed ytd-comments,
+body.controls-collapsed #below-the-fold,
+body.controls-collapsed ytd-item-section-renderer,
+body.controls-collapsed #secondary,
+body.controls-collapsed #secondary-inner,
+body.controls-collapsed ytd-watch-next-secondary-results-renderer,
+body.controls-collapsed ytd-comment-thread-renderer,
+body.controls-collapsed ytd-commentbox,
+body.controls-collapsed #content > #primary,
+body.controls-collapsed #primary > #primary-inner,
+body.controls-collapsed #columns {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* YouTube固有のその他の要素調整 - より限定的に */
+ytd-app[is-watch-page] {
+    transition: padding-top 0.3s ease !important;
+}
+
+body.controls-collapsed ytd-app[is-watch-page] {
+    padding-top: 0 !important;
+}

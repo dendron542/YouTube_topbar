@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Top Controls",
+  "version": "1.0.0",
+  "description": "YouTubeの動画視聴中にスクロールしても上部にコントロールを常に表示する拡張機能",
+  
+  "permissions": [
+    "activeTab"
+  ],
+  
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/watch*",
+        "https://youtube.com/watch*"
+      ],
+      "js": ["content/youtube-controls.js"],
+      "css": ["content/youtube-controls.css"],
+      "run_at": "document_end"
+    }
+  ],
+  
+  "icons": {
+    "16": "icons/icon.png",
+    "32": "icons/icon.png",
+    "48": "icons/icon.png",
+    "128": "icons/icon.png"
+  }
+}
