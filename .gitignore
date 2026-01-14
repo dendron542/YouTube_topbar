@@ -1,1 +1,9 @@
 .claude
+.pytest_cache
+
+plan
+prog
+tmp
+
+AGENTS.md
+AGENTS_JP.md

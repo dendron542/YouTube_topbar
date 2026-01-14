@@ -1,0 +1,81 @@
+﻿<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>YouTube Top Controls - 設定</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>YouTube Top Controls</h1>
+      <p class="desc">トップバーの各ボタンに割り当てる機能を変更できます。</p>
+
+      <section class="card">
+        <h2>ボタン割り当て</h2>
+
+        <div class="row">
+          <label for="leftPrimary">左: メイン（デフォルト: 再生/一時停止）</label>
+          <select id="leftPrimary"></select>
+        </div>
+
+        <div class="row">
+          <label for="leftSecondary">左: カスタム1（デフォルト: 10秒戻し）</label>
+          <select id="leftSecondary"></select>
+        </div>
+
+        <div class="row">
+          <label for="leftTertiary">左: カスタム2（デフォルト: 10秒送り）</label>
+          <select id="leftTertiary"></select>
+        </div>
+
+        <div class="row">
+          <label for="volumeToggle">音量ボタン（デフォルト: ミュート）</label>
+          <select id="volumeToggle"></select>
+        </div>
+
+        <div class="row">
+          <label for="showVolumeSlider">音量スライダーを表示</label>
+          <input id="showVolumeSlider" type="checkbox" />
+        </div>
+
+        <div class="row">
+          <label for="showTimeDisplay">時間表示（0:00 / 0:00）を表示</label>
+          <input id="showTimeDisplay" type="checkbox" />
+        </div>
+
+        <div class="row">
+          <label for="rightExtra">右: カスタム（デフォルト: ループ）</label>
+          <select id="rightExtra"></select>
+        </div>
+
+        <div class="row">
+          <label for="rightSettings">右: 設定（デフォルト: 設定）</label>
+          <select id="rightSettings"></select>
+        </div>
+
+        <div class="row">
+          <label for="rightFullscreen">右: フルスクリーン（デフォルト: フルスクリーン）</label>
+          <select id="rightFullscreen"></select>
+        </div>
+
+        <div class="actions">
+          <button id="save" type="button">保存</button>
+          <button id="reset" type="button" class="secondary">デフォルトに戻す</button>
+          <span id="status" class="status" aria-live="polite"></span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>ヒント</h2>
+        <ul>
+          <li>「もう一回見る」= 現在の動画の先頭に戻して再生します</li>
+          <li>「次の動画を再生」= プレイヤーの「次へ」ボタンがあればクリックします（なければ Up Next の先頭を試します）</li>
+          <li>「表示しない」= そのスロットのボタン自体を非表示にします</li>
+        </ul>
+      </section>
+    </main>
+
+    <script src="options.js"></script>
+  </body>
+</html>

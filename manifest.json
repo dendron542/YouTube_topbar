@@ -5,8 +5,11 @@
   "description": "YouTubeの動画視聴中にスクロールしても上部にコントロールを常に表示する拡張機能",
   
   "permissions": [
-    "activeTab"
+    "activeTab",
+    "storage"
   ],
+
+  "options_page": "options/options.html",
   
   "content_scripts": [
     {

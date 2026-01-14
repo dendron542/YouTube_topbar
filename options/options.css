@@ -1,0 +1,74 @@
+﻿:root {
+  color-scheme: light dark;
+}
+
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 780px;
+  padding: 24px;
+  margin: 0 auto;
+}
+
+.desc {
+  opacity: 0.8;
+}
+
+.card {
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+label {
+  font-weight: 600;
+}
+
+select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+button {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(127, 127, 127, 0.45);
+  cursor: pointer;
+}
+
+button.secondary {
+  opacity: 0.85;
+}
+
+.status {
+  margin-left: auto;
+  opacity: 0.85;
+}
+
+@media (min-width: 680px) {
+  .row {
+    grid-template-columns: 320px 1fr;
+    align-items: center;
+  }
+}
