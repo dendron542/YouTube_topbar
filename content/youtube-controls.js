@@ -24,6 +24,8 @@ class YouTubeTopControls {
 
         this.isLive = false;
         this.isLiveDvr = false;
+        this.scrollBookmarkY = null;
+        this.isScrollBookmarkActive = false;
         
         this.init();
     }
@@ -335,6 +337,7 @@ class YouTubeTopControls {
                 </div>
                 
                 <div class="top-controls-right">
+                    ${this.renderActionButtonHTML("top-scroll-bookmark-btn", "scrollBookmark")}
                     ${this.renderSlotButtonHTML("rightExtra", "top-right-extra-btn")}
                     ${this.renderSlotButtonHTML("rightSettings", "top-settings-btn")}
                     ${this.renderSlotButtonHTML("rightFullscreen", "top-fullscreen-btn")}
@@ -448,6 +451,11 @@ class YouTubeTopControls {
 
             const rightExtraBtn = this.topControlBar.querySelector('#top-right-extra-btn');
             rightExtraBtn?.addEventListener('click', (e) =>
+                this.safeExecute(() => this.handleButtonAction(e.currentTarget?.dataset?.action)),
+            );
+
+            const scrollBookmarkBtn = this.topControlBar.querySelector('#top-scroll-bookmark-btn');
+            scrollBookmarkBtn?.addEventListener('click', (e) =>
                 this.safeExecute(() => this.handleButtonAction(e.currentTarget?.dataset?.action)),
             );
             
@@ -591,6 +599,7 @@ class YouTubeTopControls {
             action === 'previousVideo' ||
             action === 'nextVideo' ||
             action === 'loopToggle' ||
+            action === 'scrollBookmark' ||
             action === 'muteToggle' ||
             action === 'youtubeSettings' ||
             action === 'youtubeFullscreen' ||
@@ -663,6 +672,10 @@ class YouTubeTopControls {
                 return '\u6B21\u306E\u52D5\u753B\u3092\u518D\u751F';
             case 'loopToggle':
                 return `\u30EB\u30FC\u30D7\u518D\u751F: ${this.isLoopEnabled ? 'ON' : 'OFF'}`;
+            case 'scrollBookmark':
+                return this.isScrollBookmarkActive
+                    ? '\u5143\u306E\u30B9\u30AF\u30ED\u30FC\u30EB\u4F4D\u7F6E\u3078\u623B\u308B'
+                    : '\u30B9\u30AF\u30ED\u30FC\u30EB\u4F4D\u7F6E\u3092\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u3057\u3066\u52D5\u753B\u3078\u623B\u308B';
             case 'muteToggle':
                 return '\u30DF\u30E5\u30FC\u30C8/\u89E3\u9664';
             case 'youtubeSettings':
@@ -748,6 +761,18 @@ class YouTubeTopControls {
                 <button ${commonAttrs} aria-pressed="${pressed}">
                     <svg viewBox="0 0 24 24">
                         <path d="M7 7h11v3l4-4-4-4v3H6c-1.1 0-2 .9-2 2v4h2V7zm13 10v-4h-2v4H7v-3l-4 4 4 4v-3h12c1.1 0 2-.9 2-2z" fill="currentColor"/>
+                    </svg>
+                </button>
+            `;
+        }
+
+        if (action === 'scrollBookmark') {
+            const pressed = this.isScrollBookmarkActive ? 'true' : 'false';
+            return `
+                <button ${commonAttrs} aria-pressed="${pressed}">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2zm0 15l-5-2.18L7 18V5h10v13z" fill="currentColor"/>
+                        <path d="M12 7l-4 4h3v3h2v-3h3l-4-4z" fill="currentColor"/>
                     </svg>
                 </button>
             `;
@@ -855,6 +880,57 @@ class YouTubeTopControls {
         }
     }
 
+    toggleScrollBookmark() {
+        try {
+            if (this.isScrollBookmarkActive && this.scrollBookmarkY !== null) {
+                window.scrollTo({ top: this.scrollBookmarkY, behavior: 'auto' });
+                this.scrollBookmarkY = null;
+                this.isScrollBookmarkActive = false;
+                this.updateScrollBookmarkButton();
+                return;
+            }
+
+            this.scrollBookmarkY = Math.max(0, window.scrollY || window.pageYOffset || 0);
+            this.isScrollBookmarkActive = true;
+            window.scrollTo({ top: this.getVideoTopScrollY(), behavior: 'auto' });
+            this.updateScrollBookmarkButton();
+        } catch (error) {
+            console.error('YouTube Top Controls: Error toggling scroll bookmark:', error);
+        }
+    }
+
+    getVideoTopScrollY() {
+        const target =
+            document.querySelector('ytd-player') ||
+            document.querySelector('#player') ||
+            this.video?.closest?.('ytd-player') ||
+            this.video?.closest?.('#player') ||
+            this.video;
+
+        if (!target?.getBoundingClientRect) return 0;
+
+        const rect = target.getBoundingClientRect();
+        const barHeight = this.topControlBar?.getBoundingClientRect?.().height || 0;
+        return Math.max(0, Math.round(rect.top + window.scrollY - barHeight - 8));
+    }
+
+    updateScrollBookmarkButton() {
+        try {
+            if (!this.topControlBar) return;
+
+            const buttons = this.topControlBar.querySelectorAll(
+                'button[data-action="scrollBookmark"]',
+            );
+            buttons.forEach((btn) => {
+                btn.classList.toggle('is-active', this.isScrollBookmarkActive);
+                btn.setAttribute('aria-pressed', this.isScrollBookmarkActive ? 'true' : 'false');
+                btn.title = this.getActionTitle('scrollBookmark');
+            });
+        } catch (error) {
+            console.error('YouTube Top Controls: Error updating scroll bookmark button:', error);
+        }
+    }
+
     handleButtonAction(action) {
         try {
             if (!action || action === 'none') return;
@@ -885,6 +961,10 @@ class YouTubeTopControls {
             }
             if (action === 'loopToggle') {
                 this.toggleLoop();
+                return;
+            }
+            if (action === 'scrollBookmark') {
+                this.toggleScrollBookmark();
                 return;
             }
             if (action === 'muteToggle') {

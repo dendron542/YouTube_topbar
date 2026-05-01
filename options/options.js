@@ -20,6 +20,7 @@ const ACTIONS = [
   { value: 'previousVideo', label: '前の動画を再生' },
   { value: 'nextVideo', label: '次の動画を再生' },
   { value: 'loopToggle', label: 'ループ再生 ON/OFF' },
+  { value: 'scrollBookmark', label: 'スクロール位置をブックマーク/復帰' },
   { value: 'muteToggle', label: 'ミュート ON/OFF' },
   { value: 'youtubeSettings', label: 'YouTube 設定を開く' },
   { value: 'youtubeFullscreen', label: 'フルスクリーン切替' },
