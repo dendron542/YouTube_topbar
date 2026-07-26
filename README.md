@@ -109,11 +109,16 @@ MIT License
 
 ## 更新履歴
 
-### v1.0.0
-- 初回リリース
-- 基本コントロール機能実装
-- レスポンシブデザイン対応
-- エラーハンドリング・パフォーマンス最適化
+過去のリリースと対応コミットは [CHANGELOG.md](CHANGELOG.md) を参照してください。
+
+### バージョン更新手順
+
+1. SemVer（機能追加は minor、不具合修正は patch）に従って
+   `manifest.json` の `version` を更新する
+2. `CHANGELOG.md` の先頭に同じバージョン、日付、変更内容を追記する
+3. `uv run pytest tests/test_version_consistency.py -q` で整合を確認する
+
+バージョン番号の正本は `manifest.json` です。
 
 ## 注意事項
 

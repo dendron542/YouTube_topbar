@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Top Controls",
-  "version": "1.0.0",
+  "version": "1.2.3",
   "description": "YouTubeの動画視聴中にスクロールしても上部にコントロールを常に表示する拡張機能",
   
   "permissions": [
