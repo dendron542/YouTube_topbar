@@ -24,8 +24,11 @@ class YouTubeTopControls {
 
         this.isLive = false;
         this.isLiveDvr = false;
-        this.scrollBookmarkY = null;
-        this.isScrollBookmarkActive = false;
+        this.scrollBookmarkStorageKey = 'youtubeTopControls_scrollBookmark_v1';
+        this.scrollBookmarkWindowNamePrefix = '__youtubeTopControlsScrollBookmark__:';
+        this.scrollBookmarkY = this.loadStoredScrollBookmark();
+        this.isScrollBookmarkActive = this.scrollBookmarkY !== null;
+        this.commentTimestampClickHandler = null;
         
         this.init();
     }
@@ -428,6 +431,7 @@ class YouTubeTopControls {
             
             // 全画面状態の監視
             this.setupFullscreenListener();
+            this.setupCommentTimestampClickHandler();
             
             const leftPrimaryBtn = this.topControlBar.querySelector('#top-left-primary-btn');
             leftPrimaryBtn?.addEventListener('click', (e) =>
@@ -835,6 +839,79 @@ class YouTubeTopControls {
         }
     }
 
+    getCurrentVideoId() {
+        try {
+            return new URL(window.location.href).searchParams.get('v');
+        } catch {
+            return null;
+        }
+    }
+
+    loadStoredScrollBookmark() {
+        try {
+            const raw =
+                sessionStorage.getItem(this.scrollBookmarkStorageKey) ||
+                this.loadStoredScrollBookmarkFromWindowName();
+            if (!raw) return null;
+
+            const parsed = JSON.parse(raw);
+            const scrollY = Number(parsed?.scrollY);
+            const videoId = parsed?.videoId;
+            const currentVideoId = this.getCurrentVideoId();
+
+            if (!Number.isFinite(scrollY) || scrollY < 0) return null;
+            if (videoId && currentVideoId && videoId !== currentVideoId) return null;
+
+            return Math.round(scrollY);
+        } catch {
+            return null;
+        }
+    }
+
+    loadStoredScrollBookmarkFromWindowName() {
+        try {
+            if (!window.name?.startsWith?.(this.scrollBookmarkWindowNamePrefix)) {
+                return null;
+            }
+
+            return window.name.slice(this.scrollBookmarkWindowNamePrefix.length);
+        } catch {
+            return null;
+        }
+    }
+
+    persistScrollBookmark() {
+        try {
+            if (this.scrollBookmarkY === null || !this.isScrollBookmarkActive) {
+                sessionStorage.removeItem(this.scrollBookmarkStorageKey);
+                if (window.name?.startsWith?.(this.scrollBookmarkWindowNamePrefix)) {
+                    window.name = '';
+                }
+                return;
+            }
+
+            const payload = JSON.stringify({
+                videoId: this.getCurrentVideoId(),
+                scrollY: this.scrollBookmarkY,
+            });
+            sessionStorage.setItem(this.scrollBookmarkStorageKey, payload);
+            window.name = `${this.scrollBookmarkWindowNamePrefix}${payload}`;
+        } catch {
+            // sessionStorage が使えない環境は無視
+        }
+    }
+
+    clearStoredScrollBookmark() {
+        try {
+            sessionStorage.removeItem(this.scrollBookmarkStorageKey);
+            if (window.name?.startsWith?.(this.scrollBookmarkWindowNamePrefix)) {
+                window.name = '';
+            }
+        } catch {
+            // sessionStorage が使えない環境は無視
+        }
+    }
+
     persistLoopEnabled() {
         try {
             localStorage.setItem(this.loopStorageKey, this.isLoopEnabled ? '1' : '0');
@@ -880,22 +957,78 @@ class YouTubeTopControls {
         }
     }
 
+    getCurrentScrollY() {
+        return Math.max(
+            0,
+            window.scrollY ||
+                window.pageYOffset ||
+                document.documentElement?.scrollTop ||
+                document.body?.scrollTop ||
+                0,
+        );
+    }
+
+    saveCurrentScrollBookmark() {
+        this.scrollBookmarkY = this.getCurrentScrollY();
+        this.isScrollBookmarkActive = true;
+        this.persistScrollBookmark();
+        this.updateScrollBookmarkButton();
+    }
+
     toggleScrollBookmark() {
         try {
             if (this.isScrollBookmarkActive && this.scrollBookmarkY !== null) {
                 window.scrollTo({ top: this.scrollBookmarkY, behavior: 'auto' });
                 this.scrollBookmarkY = null;
                 this.isScrollBookmarkActive = false;
+                this.clearStoredScrollBookmark();
                 this.updateScrollBookmarkButton();
                 return;
             }
 
-            this.scrollBookmarkY = Math.max(0, window.scrollY || window.pageYOffset || 0);
-            this.isScrollBookmarkActive = true;
+            this.saveCurrentScrollBookmark();
             window.scrollTo({ top: this.getVideoTopScrollY(), behavior: 'auto' });
-            this.updateScrollBookmarkButton();
         } catch (error) {
             console.error('YouTube Top Controls: Error toggling scroll bookmark:', error);
+        }
+    }
+
+    setupCommentTimestampClickHandler() {
+        if (this.commentTimestampClickHandler) {
+            document.removeEventListener('click', this.commentTimestampClickHandler, true);
+        }
+
+        this.commentTimestampClickHandler = (event) =>
+            this.safeExecute(() => this.handleCommentTimestampClick(event));
+        document.addEventListener('click', this.commentTimestampClickHandler, true);
+    }
+
+    handleCommentTimestampClick(event) {
+        const anchor = this.findCommentTimestampAnchor(event.target);
+        if (!anchor) return;
+        this.saveCurrentScrollBookmark();
+    }
+
+    findCommentTimestampAnchor(target) {
+        const anchor = target?.closest?.('a[href]');
+        if (!anchor) return null;
+        if (!anchor.closest?.('#comments, ytd-comments, ytd-comment-thread-renderer, ytd-comment-renderer')) {
+            return null;
+        }
+
+        try {
+            const url = new URL(anchor.href, window.location.origin);
+            const currentUrl = new URL(window.location.href);
+            const currentVideoId = currentUrl.searchParams.get('v');
+            const targetVideoId = url.searchParams.get('v');
+
+            if (url.pathname !== '/watch') return null;
+            if (!url.searchParams.has('t')) return null;
+            if (currentVideoId && targetVideoId && targetVideoId !== currentVideoId) return null;
+
+            return anchor;
+        } catch {
+            return null;
         }
     }
 
@@ -1509,7 +1642,10 @@ class YouTubeTopControls {
         if (this.topControlBar) {
             this.topControlBar.remove();
         }
-        // クリーンアップ
+        if (this.commentTimestampClickHandler) {
+            document.removeEventListener('click', this.commentTimestampClickHandler, true);
+            this.commentTimestampClickHandler = null;
+        }
         document.body.classList.remove('controls-collapsed');
         document.body.classList.remove('youtube-top-controls-active');
         document.body.classList.remove('controls-at-scroll');
