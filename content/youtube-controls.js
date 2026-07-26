@@ -93,6 +93,7 @@ class YouTubeTopControls {
                 const playerContainer = document.querySelector('#movie_player, .html5-video-player, ytd-player');
                 if (!playerContainer && this.retryCount < 3) {
                     console.log('YouTube Top Controls: Player container not found, will retry shortly...');
+                    this.isInitializing = false; // リトライ時に initializeWhenReady が早期returnしないようリセット
                     this.handleRetry();
                     return;
                 }
@@ -211,7 +212,7 @@ class YouTubeTopControls {
                 const videos = document.querySelectorAll(selector);
                 // 複数のビデオ要素がある場合は最初の表示可能なものを選択
                 for (const video of videos) {
-                    if (video && video.offsetParent !== null && video.src) {
+                    if (video && video.offsetParent !== null && (video.src || video.currentSrc || video.readyState > 0)) {
                         this.video = video;
                         console.log(`YouTube Top Controls: Video found with selector: ${selector}`, video);
                         break;
@@ -334,8 +335,11 @@ class YouTubeTopControls {
                 </div>
                 
                 <div class="top-controls-center">
-                    <div class="top-progress-container">
-                        <input type="range" id="top-progress-bar" min="0" max="100" value="0" class="top-progress-bar">
+                    <div class="top-progress-container" id="top-progress-container">
+                        <div class="top-progress-track" id="top-progress-bar" role="slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                            <div class="top-progress-fill" id="top-progress-fill"></div>
+                            <div class="top-progress-thumb" id="top-progress-thumb"></div>
+                        </div>
                     </div>
                 </div>
                 
@@ -472,34 +476,35 @@ class YouTubeTopControls {
                 });
             });
             
-            // プログレスバー（スロットリング付き）
+            // カスタムプログレスバー
             const progressBar = this.topControlBar.querySelector('#top-progress-bar');
-            let progressThrottle = null;
-            
-            progressBar?.addEventListener('mousedown', () => {
+
+            const getSeekPercent = (e) => {
+                const rect = progressBar.getBoundingClientRect();
+                return Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            };
+
+            progressBar?.addEventListener('mousedown', (e) => {
                 this.isDraggingProgress = true;
+                const pct = getSeekPercent(e);
+                this.setProgressVisual(pct * 100);
+                this.safeExecute(() => this.seekTo(pct));
             });
-            
-            progressBar?.addEventListener('mouseup', () => {
+
+            const onMouseMove = (e) => {
+                if (!this.isDraggingProgress) return;
+                const pct = getSeekPercent(e);
+                this.setProgressVisual(pct * 100);
+                this.safeExecute(() => this.seekTo(pct));
+            };
+
+            const onMouseUp = () => {
+                if (!this.isDraggingProgress) return;
                 this.isDraggingProgress = false;
-            });
-            
-            progressBar?.addEventListener('input', (e) => {
-                if (progressThrottle) clearTimeout(progressThrottle);
-                this.isDraggingProgress = true;
-                
-                // ドラッグ中は視覚的フィードバックのみ更新（即座に）
-                const value = parseFloat(e.target.value);
-                e.target.style.setProperty('--progress-fill', value + '%');
-                
-                progressThrottle = setTimeout(() => {
-                    this.safeExecute(() => this.seekTo(value / 100));
-                    // シーク後にフラグをリセット
-                    setTimeout(() => {
-                        this.isDraggingProgress = false;
-                    }, 50);
-                }, 100);
-            });
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
             
             const settingsBtn = this.topControlBar.querySelector('#top-settings-btn');
             settingsBtn?.addEventListener('click', (e) =>
@@ -514,28 +519,29 @@ class YouTubeTopControls {
             // 折り畳み/展開ボタン
             const leftCollapseBtn = this.topControlBar.querySelector('#left-collapse-btn');
             const rightCollapseBtn = this.topControlBar.querySelector('#right-collapse-btn');
-            const expandBtn = this.topControlBar.querySelector('#expand-btn');
-            
+            // 見た目上はピル全体がボタンなので、内側の#expand-btnではなくピル全体で判定する
+            const collapsedPill = this.topControlBar.querySelector('.top-controls-collapsed');
+
             leftCollapseBtn?.addEventListener('click', () => this.safeExecute(() => this.toggleCollapse()));
             rightCollapseBtn?.addEventListener('click', () => this.safeExecute(() => this.toggleCollapse()));
-            expandBtn?.addEventListener('click', () => this.safeExecute(() => this.toggleCollapse()));
+            collapsedPill?.addEventListener('click', () => this.safeExecute(() => this.toggleCollapse()));
             
-            // 動画の状態変化を監視（スロットリング付き）
-            this.video.addEventListener('play', () => this.safeExecute(() => this.updatePlayButton()));
-            this.video.addEventListener('pause', () => this.safeExecute(() => this.updatePlayButton()));
-            
+            // 動画の状態変化を監視
+            this.video.addEventListener('play', () => {
+                this.safeExecute(() => this.updatePlayButton());
+                this.startProgressLoop();
+            });
+            this.video.addEventListener('pause', () => {
+                this.safeExecute(() => this.updatePlayButton());
+                this.stopProgressLoop();
+                this.safeExecute(() => this.updateProgress());
+            });
+
             // インスタンス変数として保存
             this.isDraggingProgress = false;
-            
-            // timeupdate イベントのスロットリングを最小限にして滑らかな進行を実現
-            let timeUpdateThrottle = null;
-            this.video.addEventListener('timeupdate', () => {
-                if (timeUpdateThrottle) return;
-                timeUpdateThrottle = setTimeout(() => {
-                    this.safeExecute(() => this.updateProgress());
-                    timeUpdateThrottle = null;
-                }, 8); // 約120FPSで更新
-            });
+
+            // 再生中なら即座にループ開始
+            if (!this.video.paused) this.startProgressLoop();
             
             this.video.addEventListener('volumechange', () => this.safeExecute(() => this.updateVolumeDisplay()));
             this.video.addEventListener('loadedmetadata', () =>
@@ -545,21 +551,35 @@ class YouTubeTopControls {
                     this.updateLiveUiState();
                 }),
             );
-            
-            // 定期的な音量同期（YouTubeの元コントロールとの同期用）
+
+            // video.loop がYouTubeにリセットされた場合のフォールバック
+            this.video.addEventListener('ended', () => {
+                this.safeExecute(() => {
+                    if (this.isLoopEnabled && !this.isLive && this.video) {
+                        this.video.currentTime = 0;
+                        this.video.play().catch(() => {});
+                    }
+                });
+            });
+
+            // 定期的な同期（音量・ライブ状態のみ。プログレスはrAFループが担当）
             setInterval(() => {
                 this.safeExecute(() => this.updateVolumeDisplay());
-                if (!this.isDraggingProgress) {
-                    this.safeExecute(() => this.updateProgress());
-                }
                 this.safeExecute(() => this.updateLiveState());
                 this.safeExecute(() => this.updateLiveUiState());
+                // video.loop がYouTubeにリセットされていれば再適用
+                this.safeExecute(() => {
+                    if (this.isLoopEnabled && !this.isLive && this.video && !this.video.loop) {
+                        this.video.loop = true;
+                    }
+                });
             }, 500); // 500msに短縮
             
             // 初期値を設定
             this.safeExecute(() => this.updateVolumeDisplay());
             this.safeExecute(() => this.updatePlayButton());
             this.safeExecute(() => this.updateLoopButton());
+            this.safeExecute(() => this.updateScrollBookmarkButton());
             this.safeExecute(() => this.updateLiveUiState());
             if (this.video.duration) {
                 this.safeExecute(() => this.updateDuration());
@@ -1129,13 +1149,11 @@ class YouTubeTopControls {
 
     computeLiveState() {
         const playerRoot = this.getPlayerRoot();
-        const isLiveBadge =
-            !!playerRoot?.querySelector?.('.ytp-live-badge') ||
-            !!playerRoot?.querySelector?.('.ytp-live') ||
-            playerRoot?.classList?.contains?.('ytp-live');
+        // offsetParent !== null で「実際に表示されているバッジ」のみ判定
+        const liveBadgeEl = playerRoot?.querySelector?.('.ytp-live-badge');
+        const isLiveBadge = !!(liveBadgeEl && liveBadgeEl.offsetParent !== null);
 
-        const durationIsInfinite =
-            typeof this.video?.duration === 'number' && !Number.isFinite(this.video.duration);
+        const durationIsInfinite = this.video?.duration === Infinity;
 
         const isLive = !!this.video && (isLiveBadge || durationIsInfinite);
 
@@ -1185,8 +1203,8 @@ class YouTubeTopControls {
 
             const progressBar = this.topControlBar.querySelector('#top-progress-bar');
             if (progressBar) {
-                progressBar.disabled = !canSeek;
                 progressBar.classList.toggle('is-disabled', !canSeek);
+                progressBar.style.pointerEvents = canSeek ? '' : 'none';
             }
 
             // Seek系ボタン（rewind/forward/replay）をLive(非DVR)では無効化
@@ -1374,24 +1392,34 @@ class YouTubeTopControls {
         });
     }
     
+    setProgressVisual(percentage) {
+        const fill = this.topControlBar?.querySelector('#top-progress-fill');
+        const thumb = this.topControlBar?.querySelector('#top-progress-thumb');
+        const track = this.topControlBar?.querySelector('#top-progress-bar');
+        if (!fill || !thumb || !track) return;
+
+        const ratio = Math.max(0, Math.min(1, percentage / 100));
+        const trackWidth = track.getBoundingClientRect().width;  // 小数点精度で取得
+        const thumbSize = 16;
+
+        // YouTube 方式: fill は scaleX、thumb は translateX(px)
+        fill.style.transform = `scaleX(${ratio})`;
+        thumb.style.transform = `translateX(${ratio * trackWidth - thumbSize / 2}px) translateY(-50%)`;
+
+        track.setAttribute('aria-valuenow', Math.round(ratio * 100));
+    }
+
     updateProgress() {
         try {
             if (!this.video || !this.video.duration || !this.topControlBar) return;
-            
-            const progressBar = this.topControlBar.querySelector('#top-progress-bar');
+
             const currentTimeSpan = this.topControlBar.querySelector('#top-current-time');
-            
-            if (progressBar && !this.isDraggingProgress) {
-                // ドラッグ中でない場合のみプログレスバーを更新
+
+            if (!this.isDraggingProgress) {
                 const percentage = (this.video.currentTime / this.video.duration) * 100;
-                const clampedPercentage = Math.max(0, Math.min(100, percentage));
-                const roundedPercentage = Math.round(clampedPercentage * 1000) / 1000; // より高精度に
-                
-                // DOM更新を同一フレーム内で実行し、スライダー値を先に設定
-                progressBar.value = roundedPercentage;
-                progressBar.style.setProperty('--progress-fill', roundedPercentage + '%');
+                this.setProgressVisual(percentage);
             }
-            
+
             if (currentTimeSpan) {
                 currentTimeSpan.textContent = this.formatTime(this.video.currentTime);
             }
@@ -1632,7 +1660,24 @@ class YouTubeTopControls {
         });
     }
     
+    startProgressLoop() {
+        this.stopProgressLoop();
+        const loop = () => {
+            this.safeExecute(() => this.updateProgress());
+            this._rafId = requestAnimationFrame(loop);
+        };
+        this._rafId = requestAnimationFrame(loop);
+    }
+
+    stopProgressLoop() {
+        if (this._rafId) {
+            cancelAnimationFrame(this._rafId);
+            this._rafId = null;
+        }
+    }
+
     destroy() {
+        this.stopProgressLoop();
         if (this.observer) {
             this.observer.disconnect();
         }
@@ -1692,6 +1737,3 @@ urlObserver.observe(document.body, {
     childList: true,
     subtree: true
 });
-
-
-

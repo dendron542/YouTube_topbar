@@ -101,20 +101,23 @@
     fill: currentColor !important;
 }
 
-/* 折り畳み状態 */
+/* 折り畳み状態（マストヘッド内の空きスペース＝ロゴ右・検索窓左に重ねて配置） */
 .top-controls-collapsed {
     display: none !important;
     position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
+    top: 10px !important;
+    left: 250px !important;
+    right: auto !important;
     transform: none !important;
-    background: rgba(0, 0, 0, 0.9) !important;
+    background: rgba(28, 28, 28, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
     backdrop-filter: blur(10px) !important;
-    border-radius: 0 0 12px 0 !important;
-    padding: 8px 16px !important;
-    z-index: 10000 !important;
+    border-radius: 18px !important;
+    padding: 6px 12px !important;
+    z-index: 2100 !important; /* masthead(2020)より上、ダイアログ類より下 */
     width: auto !important;
     max-width: 200px !important;
+    cursor: pointer !important;
 }
 
 .top-expand-btn {
@@ -128,11 +131,6 @@
     justify-content: center !important;
     transition: all 0.2s ease !important;
     border-radius: 4px !important;
-}
-
-.top-expand-btn:hover {
-    background: rgba(255, 255, 255, 0.1) !important;
-    transform: scale(1.1) !important;
 }
 
 .top-expand-btn svg {
@@ -165,18 +163,12 @@
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
-    position: fixed !important;
-    top: 10px !important;
-    left: 250px !important;
-    transform: none !important;
-    background: rgba(0, 0, 0, 0.8) !important;
-    backdrop-filter: blur(8px) !important;
-    border-radius: 8px !important;
-    padding: 8px 12px !important;
     margin: 0 !important;
-    width: auto !important;
-    max-width: 60px !important;
-    z-index: 10001 !important;
+}
+
+.youtube-top-controls-bar.collapsed .top-controls-collapsed:hover {
+    background: rgba(48, 48, 48, 0.95) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
 }
 
 /* ボタンスタイル */
@@ -205,15 +197,9 @@
     background: rgba(255, 255, 255, 0.2) !important;
 }
 
-.top-control-btn.is-disabled,
-.top-progress-bar.is-disabled {
+.top-control-btn.is-disabled {
     opacity: 0.55 !important;
     pointer-events: none !important;
-}
-
-.top-progress-bar:disabled {
-    cursor: not-allowed !important;
-    opacity: 0.55 !important;
 }
 
 .top-control-btn:active {
@@ -305,21 +291,52 @@
     align-items: center !important;
 }
 
-.top-progress-bar {
+/* カスタムプログレスバー（div ベース） */
+.top-progress-track {
+    position: relative !important;
     width: 100% !important;
     height: clamp(4px, 0.6vw, 6px) !important;
-    background: linear-gradient(to right, #ff0000 0%, #ff0000 var(--progress-fill, 0%), rgba(255, 255, 255, 0.3) var(--progress-fill, 0%), rgba(255, 255, 255, 0.3) 100%) !important;
+    background: rgba(255, 255, 255, 0.3) !important;
     border-radius: 3px !important;
-    outline: none !important;
     cursor: pointer !important;
-    -webkit-appearance: none !important;
-    appearance: none !important;
     transition: height 0.2s ease !important;
-    --progress-fill: 0%;
 }
 
-.top-progress-bar:hover {
+.top-progress-container:hover .top-progress-track {
     height: clamp(6px, 0.9vw, 8px) !important;
+}
+
+.top-progress-fill {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: #ff0000 !important;
+    border-radius: 3px !important;
+    pointer-events: none !important;
+    transform: scaleX(0);
+    transform-origin: left center !important;
+}
+
+.top-progress-thumb {
+    position: absolute !important;
+    top: 50% !important;
+    left: 0 !important;
+    width: 16px !important;
+    height: 16px !important;
+    background: #ff0000 !important;
+    border-radius: 50% !important;
+    border: 2px solid white !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+    pointer-events: none !important;
+    opacity: 1 !important;
+    /* transform は JS 側で translateX + translateY(-50%) を完全制御 */
+}
+
+.top-progress-track.is-disabled {
+    opacity: 0.55 !important;
+    pointer-events: none !important;
 }
 
 /* Stack progress bar on narrow widths */
@@ -331,34 +348,6 @@
             "center center" !important;
         padding: 0 26px !important;
     }
-}
-
-.top-progress-bar::-webkit-slider-thumb {
-    width: 16px !important;
-    height: 16px !important;
-    background: #ff0000 !important;
-    border-radius: 50% !important;
-    cursor: pointer !important;
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
-    border: 2px solid white !important;
-    position: relative !important;
-    z-index: 10 !important;
-}
-
-.top-progress-bar:hover::-webkit-slider-thumb {
-    transform: scale(1.2) !important;
-}
-
-.top-progress-bar::-moz-range-thumb {
-    width: 16px !important;
-    height: 16px !important;
-    background: #ff0000 !important;
-    border-radius: 50% !important;
-    cursor: pointer !important;
-    border: 2px solid white !important;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
 }
 
 /* レスポンシブデザイン */
@@ -400,9 +389,10 @@
     
     /* 折り畳み時の位置調整 */
     .youtube-top-controls-bar.collapsed .top-controls-collapsed {
-        top: 15px !important;
+        top: 12px !important;
         left: 245px !important;
-        padding: 6px 10px !important;
+        right: auto !important;
+        padding: 5px 10px !important;
     }
 }
 
@@ -439,9 +429,10 @@
     
     /* 小画面での折り畳み時位置調整 */
     .youtube-top-controls-bar.collapsed .top-controls-collapsed {
-        top: 20px !important;
-        left: 240px !important;
-        padding: 5px 8px !important;
+        top: 14px !important;
+        left: 200px !important;
+        right: auto !important;
+        padding: 4px 8px !important;
     }
 }
 
