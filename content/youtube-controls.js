@@ -2,7 +2,7 @@
 // YouTubeの動画視聴中にスクロールしても上部にコントロールを常に表示
 
 class YouTubeTopControls {
-    constructor() {
+    constructor(isCollapsed = false) {
         this.video = null;
         this.playerRoot = null;
         this.originalControls = null;
@@ -10,7 +10,7 @@ class YouTubeTopControls {
         this.isInitialized = false;
         this.isInitializing = false;
         this.observer = null;
-        this.isCollapsed = false;
+        this.isCollapsed = isCollapsed;
         this.retryCount = 0;
         this.maxRetries = 10;
         this.retryInterval = 1000;
@@ -369,6 +369,7 @@ class YouTubeTopControls {
         
         // ページの先頭に挿入
         document.body.insertBefore(this.topControlBar, document.body.firstChild);
+        this.applyCollapseState();
         
         this.isInitialized = true;
         console.log('Top control bar created');
@@ -1492,30 +1493,25 @@ class YouTubeTopControls {
             if (!this.topControlBar) return;
             
             this.isCollapsed = !this.isCollapsed;
-            
-            const mainContainer = this.topControlBar.querySelector('.top-controls-container');
-            const collapsedContainer = this.topControlBar.querySelector('.top-controls-collapsed');
-            
-            if (this.isCollapsed) {
-                // 折り畳み状態にする
-                this.topControlBar.classList.add('collapsed');
-                document.body.classList.add('controls-collapsed');
-                if (mainContainer) mainContainer.style.display = 'none';
-                if (collapsedContainer) collapsedContainer.style.display = 'block';
-                
-                console.log('YouTube Top Controls: Controls collapsed');
-            } else {
-                // 展開状態にする
-                this.topControlBar.classList.remove('collapsed');
-                document.body.classList.remove('controls-collapsed');
-                if (mainContainer) mainContainer.style.display = 'flex';
-                if (collapsedContainer) collapsedContainer.style.display = 'none';
-                
-                console.log('YouTube Top Controls: Controls expanded');
-            }
+            this.applyCollapseState();
+            console.log(
+                `YouTube Top Controls: Controls ${this.isCollapsed ? 'collapsed' : 'expanded'}`,
+            );
         } catch (error) {
             console.error('YouTube Top Controls: Error toggling collapse:', error);
         }
+    }
+
+    applyCollapseState() {
+        if (!this.topControlBar) return;
+
+        const mainContainer = this.topControlBar.querySelector('.top-controls-container');
+        const collapsedContainer = this.topControlBar.querySelector('.top-controls-collapsed');
+
+        this.topControlBar.classList.toggle('collapsed', this.isCollapsed);
+        document.body.classList.toggle('controls-collapsed', this.isCollapsed);
+        if (mainContainer) mainContainer.style.display = this.isCollapsed ? 'none' : 'flex';
+        if (collapsedContainer) collapsedContainer.style.display = this.isCollapsed ? 'block' : 'none';
     }
     
     setupFullscreenListener() {
@@ -1702,10 +1698,11 @@ let youtubeTopControls = null;
 
 function initExtension() {
     try {
+        const wasCollapsed = youtubeTopControls?.isCollapsed ?? false;
         if (youtubeTopControls) {
             youtubeTopControls.destroy();
         }
-        youtubeTopControls = new YouTubeTopControls();
+        youtubeTopControls = new YouTubeTopControls(wasCollapsed);
     } catch (error) {
         console.error('YouTube Top Controls: Failed to initialize extension:', error);
         // エラーが発生した場合も少し待ってからリトライ
